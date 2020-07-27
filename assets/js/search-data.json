@@ -38,6 +38,17 @@
   
 
   
+      ,"page2": {
+          "title": "Contact",
+          "content": "56north | Ginnungagap . CVR: 38700766 . Mikkel Freltoft Krogsholm . Amager Boulevard 126 st th DK-2300 København S . +45 3033 3204 mikkel [at] 56n.dk . linkedin.com/in/mikkelkrogsholm .",
+          "url": "https://mikkelkrogsholm.github.io/fastblog/contact/",
+          "relUrl": "/contact/",
+          "date": ""
+      }
+      
+  
+
+  
 
   
   
@@ -59,7 +70,7 @@
   
 
   
-      ,"page10": {
+      ,"page11": {
           "title": "",
           "content": "Sitemap: {{ “sitemap.xml” | absolute_url }} | .",
           "url": "https://mikkelkrogsholm.github.io/fastblog/robots.txt",
