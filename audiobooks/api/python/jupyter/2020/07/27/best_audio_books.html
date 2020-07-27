@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="twitter:card" content="summary" /><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Use data to find the best audio books | Mikkel’s Data Science Blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Use data to find the best audio books" />
+<meta name="author" content="Mikkel Freltoft Krogsholm" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This blog shows you how to use Python to increase your audiobook-listening experience" />
+<meta property="og:description" content="This blog shows you how to use Python to increase your audiobook-listening experience" />
+<link rel="canonical" href="https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html" />
+<meta property="og:url" content="https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html" />
+<meta property="og:site_name" content="Mikkel’s Data Science Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-07-27T00:00:00-05:00" />
+<script type="application/ld+json">
+{"author":{"@type":"Person","name":"Mikkel Freltoft Krogsholm"},"description":"This blog shows you how to use Python to increase your audiobook-listening experience","@type":"BlogPosting","headline":"Use data to find the best audio books","dateModified":"2020-07-27T00:00:00-05:00","datePublished":"2020-07-27T00:00:00-05:00","url":"https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html","mainEntityOfPage":{"@type":"WebPage","@id":"https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/fastblog/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="https://mikkelkrogsholm.github.io/fastblog/feed.xml" title="Mikkel's Data Science Blog" /><!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-16234539-10','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+<link rel="shortcut icon" type="image/x-icon" href="/fastblog/images/favicon.ico"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Use data to find the best audio books | Mikkel’s Data Science Blog</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Use data to find the best audio books" />
+<meta name="author" content="Mikkel Freltoft Krogsholm" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This blog shows you how to use Python to increase your audiobook-listening experience" />
+<meta property="og:description" content="This blog shows you how to use Python to increase your audiobook-listening experience" />
+<link rel="canonical" href="https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html" />
+<meta property="og:url" content="https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html" />
+<meta property="og:site_name" content="Mikkel’s Data Science Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-07-27T00:00:00-05:00" />
+<script type="application/ld+json">
+{"author":{"@type":"Person","name":"Mikkel Freltoft Krogsholm"},"description":"This blog shows you how to use Python to increase your audiobook-listening experience","@type":"BlogPosting","headline":"Use data to find the best audio books","dateModified":"2020-07-27T00:00:00-05:00","datePublished":"2020-07-27T00:00:00-05:00","url":"https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html","mainEntityOfPage":{"@type":"WebPage","@id":"https://mikkelkrogsholm.github.io/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html"},"@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+<link href="https://unpkg.com/@primer/css/dist/primer.css" rel="stylesheet" />
+<link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css"><link type="application/atom+xml" rel="alternate" href="https://mikkelkrogsholm.github.io/fastblog/feed.xml" title="Mikkel's Data Science Blog" /><!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-16234539-10','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+
+<script>
+function wrap_img(fn) {
+    if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading") {
+        var elements = document.querySelectorAll(".post img");
+        Array.prototype.forEach.call(elements, function(el, i) {
+            if (el.getAttribute("title") && (el.className != "emoji")) {
+                const caption = document.createElement('figcaption');
+                var node = document.createTextNode(el.getAttribute("title"));
+                caption.appendChild(node);
+                const wrapper = document.createElement('figure');
+                wrapper.className = 'image';
+                el.parentNode.insertBefore(wrapper, el);
+                el.parentNode.removeChild(el);
+                wrapper.appendChild(el);
+                wrapper.appendChild(caption);
+            }
+        });
+    } else { document.addEventListener('DOMContentLoaded', fn); }
+}
+window.onload = wrap_img;
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+    // add link icon to anchor tags
+    var elem = document.querySelectorAll(".anchor-link")
+    elem.forEach(e => (e.innerHTML = '<i class="fas fa-link fa-xs"></i>'));
+    });
+</script>
+</head>
+<body><header class="site-header">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/fastblog/">Mikkel&#39;s Data Science Blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/fastblog/about/">About Me</a><a class="page-link" href="/fastblog/contact/">Contact</a><a class="page-link" href="/fastblog/search/">Search</a><a class="page-link" href="/fastblog/categories/">Tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Use data to find the best audio books</h1><p class="page-description">This blog shows you how to use Python to increase your audiobook-listening experience</p><p class="post-meta post-meta-title"><time class="dt-published" datetime="2020-07-27T00:00:00-05:00" itemprop="datePublished">
+        Jul 27, 2020
+      </time>• 
+          <span itemprop="author" itemscope itemtype="http://schema.org/Person">
+            <span class="p-author h-card" itemprop="name">Mikkel Freltoft Krogsholm</span></span>
+       • <span class="read-time" title="Estimated read time">
+    
+    
+      9 min read
+    
+</span></p>
+
+    
+      <p class="category-tags"><i class="fas fa-tags category-tags-icon"></i></i> 
+      
+        <a class="category-tags-link" href="/fastblog/categories/#audiobooks">audiobooks</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/fastblog/categories/#api">api</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/fastblog/categories/#python">python</a>
+        &nbsp;
+      
+        <a class="category-tags-link" href="/fastblog/categories/#jupyter">jupyter</a>
+        
+      
+      </p>
+    
+
+    
+      
+        <div class="pb-5 d-flex flex-wrap flex-justify-end">
+          <div class="px-2">
+
+    <a href="https://github.com/mikkelkrogsholm/fastblog/tree/master/_notebooks/2020-07-27-best_audio_books.ipynb" role="button" target="_blank">
+<img class="notebook-badge-image" src="/fastblog/assets/badges/github.svg" alt="View On GitHub">
+    </a>
+</div>
+
+          <div class="px-2">
+    <a href="https://mybinder.org/v2/gh/mikkelkrogsholm/fastblog/master?filepath=_notebooks%2F2020-07-27-best_audio_books.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/fastblog/assets/badges/binder.svg" alt="Open In Binder"/>
+    </a>
+</div>
+
+          <div class="px-2">
+    <a href="https://colab.research.google.com/github/mikkelkrogsholm/fastblog/blob/master/_notebooks/2020-07-27-best_audio_books.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/fastblog/assets/badges/colab.svg" alt="Open In Colab"/>
+    </a>
+</div>
+        </div>
+      </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <ul class="section-nav">
+<li class="toc-entry toc-h3"><a href="#Import-libraries">Import libraries </a></li>
+<li class="toc-entry toc-h3"><a href="#Get-the-data">Get the data </a></li>
+<li class="toc-entry toc-h3"><a href="#Custom-functions">Custom functions </a></li>
+<li class="toc-entry toc-h3"><a href="#Get-the-book-categories">Get the book categories </a></li>
+<li class="toc-entry toc-h3"><a href="#Find-the-best-books">Find the best books </a></li>
+<li class="toc-entry toc-h3"><a href="#FIN">FIN </a></li>
+</ul><!--
+#################################################
+### THIS FILE WAS AUTOGENERATED! DO NOT EDIT! ###
+#################################################
+# file to edit: _notebooks/2020-07-27-best_audio_books.ipynb
+-->
+
+<div class="container" id="notebook-container">
+        
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>I am a ferocious audiobook consumer and I finish 40-60 books a year (the trick is to listen to them a 2x-3x the speed). I am also picky. There is a lot of great content out there and I only want to listen to the best of it.</p>
+<p>I have a trial membership of the audiobook service <a href="https://www.nextory.dk/">Nextory</a>. I wasn't completely satistified with the way their filtering works, so I decided to see if I could access their data and create my own filtering. It turns out I could.</p>
+<p>This blog shows you how, so you can create a list of great audiobooks to listen to!</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Import-libraries">
+<a class="anchor" href="#Import-libraries" aria-hidden="true"><span class="octicon octicon-link"></span></a>Import libraries<a class="anchor-link" href="#Import-libraries"> </a>
+</h3>
+<p>We need to import a few libraries for the code to work.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># For doinng api calls</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">requests.exceptions</span> <span class="kn">import</span> <span class="n">HTTPError</span>
+
+<span class="c1"># For creating data frames</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="c1"># For cleaning text</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="c1"># For doing math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
+
+<span class="c1"># For showing a progress bar</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Get-the-data">
+<a class="anchor" href="#Get-the-data" aria-hidden="true"><span class="octicon octicon-link"></span></a>Get the data<a class="anchor-link" href="#Get-the-data"> </a>
+</h3>
+<p>It turns out that the <a href="https://www.nextory.dk/">Nextory</a> webpage does API requests to their database behind the scenes, and by mimicking those, we can get the data in a nice clean format that is ready to be analysed.</p>
+<p>We can use the <code>requests</code> library to mimick the api calls.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Custom-functions">
+<a class="anchor" href="#Custom-functions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Custom functions<a class="anchor-link" href="#Custom-functions"> </a>
+</h3>
+<p>I am defining three custom functions that I need to either retrieve data or clean data.</p>
+<ul>
+<li>A <code>get_categories</code> function that gets all of the "main" categories that Nextory has. </li>
+<li>A <code>get_books</code> function that gets n amount of books in a category.</li>
+<li>A <code>clean_cat</code> function that cleans the category label and makes it pretty.</li>
+</ul>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># Define a custom function for getting book categories</span>
+<span class="k">def</span> <span class="nf">get_categories</span><span class="p">():</span>
+    
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">'Authorization'</span><span class="p">:</span> <span class="s1">'Basic bmV4dG9yeXVpOnRvYmVkZWNpZGVk'</span><span class="p">,</span>
+        <span class="s1">'locale'</span><span class="p">:</span> <span class="s1">'da_DK'</span><span class="p">,</span>
+        <span class="s1">'user-agent'</span><span class="p">:</span> <span class="s1">'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36'</span>
+    <span class="p">}</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="s1">'https://www.nextory.dk/api/web/catalogue/6.2/groups?view=category'</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="c1"># access JSON content</span>
+        <span class="n">jsonResponse</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+        <span class="n">bookgroups</span> <span class="o">=</span> <span class="n">jsonResponse</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="s1">'bookgroups'</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">bookgroups</span>
+
+    <span class="k">except</span> <span class="n">HTTPError</span> <span class="k">as</span> <span class="n">http_err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'HTTP error occurred: </span><span class="si">{</span><span class="n">http_err</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Other error occurred: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+        
+
+<span class="c1"># Define a custom function for getting books</span>
+<span class="k">def</span> <span class="nf">get_books</span><span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="n">rows</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
+    
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'Authorization'</span><span class="p">:</span> <span class="s1">'Basic bmV4dG9yeXVpOnRvYmVkZWNpZGVk'</span><span class="p">,</span>
+    <span class="s1">'locale'</span><span class="p">:</span> <span class="s1">'da_DK'</span><span class="p">,</span>
+    <span class="s1">'user-agent'</span><span class="p">:</span> <span class="s1">'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36'</span>
+    <span class="p">}</span>
+    
+    <span class="n">url</span> <span class="o">=</span> <span class="s2">"https://www.nextory.dk/api/web/catalogue/6.2/booksforbookgroup/"</span> <span class="o">+</span> <span class="n">category</span> <span class="o">+</span> <span class="s2">"?rows="</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">headers</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        
+        <span class="c1"># access JSON content</span>
+        <span class="n">jsonResponse</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        
+        <span class="n">books</span> <span class="o">=</span> <span class="n">jsonResponse</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="s1">'books'</span><span class="p">]</span>
+    
+        <span class="k">return</span> <span class="n">books</span>
+
+    <span class="k">except</span> <span class="n">HTTPError</span> <span class="k">as</span> <span class="n">http_err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'HTTP error occurred: </span><span class="si">{</span><span class="n">http_err</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Other error occurred: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    
+<span class="c1"># Define a custom function for cleaning categories</span>
+<span class="k">def</span> <span class="nf">clean_cat</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">'-\d$'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">'-'</span><span class="p">,</span> <span class="s1">' '</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">s</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Get-the-book-categories">
+<a class="anchor" href="#Get-the-book-categories" aria-hidden="true"><span class="octicon octicon-link"></span></a>Get the book categories<a class="anchor-link" href="#Get-the-book-categories"> </a>
+</h3>
+<p>First I run my <code>get_categories</code> function to get that categories.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">bookcats</span> <span class="o">=</span> <span class="n">get_categories</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This returns a list of dictionaries with information about each category. Lets look at the first entry. It has some information about the "main" category and then a list of subcategories within the main one.</p>
+<p><strong>NOTE</strong>: As you can tell the names are in Danish. You can change the the locale for Nextory in the custom functions above to get data for another region.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">bookcats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{'id': '4001',
+ 'title': 'Krimi',
+ 'position': 1,
+ 'slugname': 'krimi-1',
+ 'subcategories': [{'id': '4002',
+   'title': 'Hyggelig krimi',
+   'position': 1,
+   'slugname': 'hyggelig-krimi-2'},
+  {'id': '4003',
+   'title': 'Humoristisk krimi',
+   'position': 2,
+   'slugname': 'humoristisk-krimi-2'},
+  {'id': '4004',
+   'title': 'Privatdetektiver',
+   'position': 3,
+   'slugname': 'privatdetektiver-2'},
+  {'id': '4005',
+   'title': 'Noir krimi',
+   'position': 4,
+   'slugname': 'noir-krimi-2'},
+  {'id': '4006',
+   'title': 'Politi romaner',
+   'position': 5,
+   'slugname': 'politi-romaner-2'},
+  {'id': '4007',
+   'title': 'Klassisk krimi',
+   'position': 6,
+   'slugname': 'klassisk-krimi-2'},
+  {'id': '4008',
+   'title': 'Historisk krimi',
+   'position': 7,
+   'slugname': 'historisk-krimi-2'}]}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>I am interested in the slugnames of the main categories. These are the names I need to use in order to get books from each category.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">slugs</span> <span class="o">=</span> <span class="p">[]</span>
+ 
+<span class="k">for</span> <span class="n">bookcat</span> <span class="ow">in</span> <span class="n">bookcats</span><span class="p">:</span>
+    <span class="n">slugs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bookcat</span><span class="p">[</span><span class="s1">'slugname'</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">slugs</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>['krimi-1',
+ 'spaending-1',
+ 'sande-historier-1',
+ 'borneboger-1',
+ 'feelgood-and-romance-1',
+ 'biografier-and-reportage-1',
+ 'skonlitteratur-1',
+ 'skraek-1',
+ 'klassikere-and-poesi-1',
+ 'fantasy-and-science-fiction-1',
+ 'personlig-udvikling-1',
+ 'fakta-1',
+ 'samfund-and-politik-1',
+ 'serier-and-humor-1',
+ 'livsstil-and-hobby-1',
+ 'teenager-and-young-adult-1',
+ 'letlaest-1',
+ 'books-in-english']</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>With this list of categories, it is time to query each one and get books. For that I will use my <code>get_books</code> function. I will try to get 1,000 books from each category.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">books_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">slug</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">slugs</span><span class="p">):</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">books</span> <span class="o">=</span> <span class="n">get_books</span><span class="p">(</span><span class="n">slug</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">books</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'category'</span><span class="p">]</span> <span class="o">=</span> <span class="n">slug</span>
+        <span class="n">books_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'An error occurred with </span><span class="si">{</span><span class="n">slug</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>100%|██████████| 18/18 [01:01&lt;00:00,  3.42s/it]
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This gives me a list of pandas dataframes for each column that I will concatenate into one big data frame.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">booksdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">books_list</span><span class="p">)</span>
+<span class="n">booksdf</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>title</th>
+      <th>type</th>
+      <th>imageurl</th>
+      <th>weburl</th>
+      <th>descriptionbrief</th>
+      <th>relatedbookid</th>
+      <th>pubdate</th>
+      <th>authors</th>
+      <th>allowedinlibrary</th>
+      <th>...</th>
+      <th>titleslug</th>
+      <th>narratorslug</th>
+      <th>inCompletedList</th>
+      <th>relatedInCompletedList</th>
+      <th>bookstatus</th>
+      <th>relatedbookstatus</th>
+      <th>numberinseries</th>
+      <th>seriesslug</th>
+      <th>series</th>
+      <th>category</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10370882</td>
+      <td>Alt det som ingen ser</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10370882_2...</td>
+      <td>https://www.nextory.dk/bog/alt-det-som-ingen-s...</td>
+      <td>Danske Rasmus vågner i en seng i Moskva sammen...</td>
+      <td>10374229</td>
+      <td>2019-06-06 00:00:00 +0200</td>
+      <td>[Jan Have Eriksen]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>alt-det-som-ingen-ser-10370882</td>
+      <td>paul-becker-400331</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>krimi-1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>10471409</td>
+      <td>Bag lukkede døre</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10471409_2...</td>
+      <td>https://www.nextory.dk/bog/bag-lukkede-døre-10...</td>
+      <td>#1 PÅ SUNDAY TIMES-BESTSELLERLISTE. Kender du ...</td>
+      <td>10471545</td>
+      <td>2017-01-31 00:00:00 +0100</td>
+      <td>[B.A. Paris]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>bag-lukkede-døre-10471409</td>
+      <td>bolette-schrøder-400250</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>ACTIVE</td>
+      <td>1.0</td>
+      <td>mørke-hemmeligheder-20092</td>
+      <td>Mørke hemmeligheder</td>
+      <td>krimi-1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>10502808</td>
+      <td>Hvor flodkrebsene synger</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10502808_2...</td>
+      <td>https://www.nextory.dk/bog/hvor-flodkrebsene-s...</td>
+      <td>Kya Clark er den vilde pige, ”marskpigen”. Hun...</td>
+      <td>10502806</td>
+      <td>2019-09-27 00:00:00 +0200</td>
+      <td>[Delia Owens]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>hvor-flodkrebsene-synger-10502808</td>
+      <td>sara-ullner-415618</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>krimi-1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>10528019</td>
+      <td>Offer 2117</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10528019_2...</td>
+      <td>https://www.nextory.dk/bog/offer-2117-10528019</td>
+      <td>Offer 2117 er ottende bind i Jussi Adler-Olsen...</td>
+      <td>10664393</td>
+      <td>2019-06-14 00:00:00 +0200</td>
+      <td>[Jussi Adler-Olsen]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>offer-2117-10528019</td>
+      <td>githa-lehrmann-400308</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>ACTIVE</td>
+      <td>8.0</td>
+      <td>afdeling-q-18468</td>
+      <td>Afdeling Q</td>
+      <td>krimi-1</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10471424</td>
+      <td>Sammenbruddet</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10471424_2...</td>
+      <td>https://www.nextory.dk/bog/sammenbruddet-10471424</td>
+      <td>Cass har haft det svært siden den aften, hun s...</td>
+      <td>10471502</td>
+      <td>2018-08-24 00:00:00 +0200</td>
+      <td>[B.A. Paris]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>sammenbruddet-10471424</td>
+      <td>bolette-schrøder-400250</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>ACTIVE</td>
+      <td>2.0</td>
+      <td>mørke-hemmeligheder-20092</td>
+      <td>Mørke hemmeligheder</td>
+      <td>krimi-1</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 29 columns</p>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Find-the-best-books">
+<a class="anchor" href="#Find-the-best-books" aria-hidden="true"><span class="octicon octicon-link"></span></a>Find the best books<a class="anchor-link" href="#Find-the-best-books"> </a>
+</h3>
+<p>First I want to reemove duplicates in my data. A book can belong to multiple categories, but I only want one category per book. To do this I look at each isbn number at pick the category where that book has the highest position. If there are ties after that I just pick the first one. Then I drop the rank and position columns.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">idx</span> <span class="o">=</span> <span class="n">booksdf</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">'isbn'</span><span class="p">])[</span><span class="s1">'position'</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="nb">max</span><span class="p">)</span> <span class="o">==</span> <span class="n">booksdf</span><span class="p">[</span><span class="s1">'position'</span><span class="p">]</span>
+<span class="n">booksunique</span> <span class="o">=</span> <span class="n">booksdf</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+<span class="n">booksunique</span> <span class="o">=</span> <span class="n">booksunique</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'isbn'</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+<span class="n">booksunique</span> <span class="o">=</span> <span class="n">booksunique</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">'rank'</span><span class="p">,</span> <span class="s1">'position'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">booksunique</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>title</th>
+      <th>type</th>
+      <th>imageurl</th>
+      <th>weburl</th>
+      <th>descriptionbrief</th>
+      <th>relatedbookid</th>
+      <th>pubdate</th>
+      <th>authors</th>
+      <th>allowedinlibrary</th>
+      <th>...</th>
+      <th>titleslug</th>
+      <th>narratorslug</th>
+      <th>inCompletedList</th>
+      <th>relatedInCompletedList</th>
+      <th>bookstatus</th>
+      <th>relatedbookstatus</th>
+      <th>numberinseries</th>
+      <th>seriesslug</th>
+      <th>series</th>
+      <th>category</th>
+    </tr>
+    <tr>
+      <th>isbn</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>9780007227761</th>
+      <td>10051841</td>
+      <td>The Hobbit</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10051841_2...</td>
+      <td>https://www.nextory.dk/bog/the-hobbit-10051841</td>
+      <td>Bilbo Baggins is a hobbit who enjoys a comfort...</td>
+      <td></td>
+      <td>2005-10-17 00:00:00 +0200</td>
+      <td>[J. R. R. Tolkien]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>the-hobbit-10051841</td>
+      <td>martin-shaw-86014</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>books-in-english</td>
+    </tr>
+    <tr>
+      <th>9780007228386</th>
+      <td>10051842</td>
+      <td>The Fellowship of the Ring (The Lord of the Ri...</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10051842_2...</td>
+      <td>https://www.nextory.dk/bog/the-fellowship-of-t...</td>
+      <td>Continuing the story begun in The Hobbit, this...</td>
+      <td></td>
+      <td>2005-10-17 00:00:00 +0200</td>
+      <td>[J. R. R. Tolkien]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>the-fellowship-of-the-ring-the-lord-of-the-rin...</td>
+      <td>rob-inglis-85977</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>the-lord-of-the-rings-2356</td>
+      <td>The Lord of the Rings</td>
+      <td>books-in-english</td>
+    </tr>
+    <tr>
+      <th>9780007228393</th>
+      <td>10051850</td>
+      <td>The Two Towers (The Lord of the Rings, Book 2)</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10051850_2...</td>
+      <td>https://www.nextory.dk/bog/the-two-towers-the-...</td>
+      <td>Building on the story begun in The Hobbit and ...</td>
+      <td></td>
+      <td>2005-10-17 00:00:00 +0200</td>
+      <td>[J. R. R. Tolkien]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>the-two-towers-the-lord-of-the-rings-book-2--1...</td>
+      <td>rob-inglis-85977</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>2.0</td>
+      <td>the-lord-of-the-rings-2356</td>
+      <td>The Lord of the Rings</td>
+      <td>books-in-english</td>
+    </tr>
+    <tr>
+      <th>9780007237494</th>
+      <td>10052538</td>
+      <td>A Dance With Dragons (A Song of Ice and Fire, ...</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10052538_8...</td>
+      <td>https://www.nextory.dk/bog/a-dance-with-dragon...</td>
+      <td>HBO’s hit series A GAME OF THRONES is based on...</td>
+      <td></td>
+      <td>2011-07-12 00:00:00 +0200</td>
+      <td>[George R.R. Martin]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>a-dance-with-dragons-a-song-of-ice-and-fire-bo...</td>
+      <td>roy-dotrice-95418</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>5.0</td>
+      <td>a-song-of-ice-and-fire-2394</td>
+      <td>A Song of Ice and Fire</td>
+      <td>books-in-english</td>
+    </tr>
+    <tr>
+      <th>9780007237500</th>
+      <td>10052539</td>
+      <td>A Game of Thrones (A Song of Ice and Fire, Boo...</td>
+      <td>2</td>
+      <td>https://www.nextory.se/coverimg/130/10052539_7...</td>
+      <td>https://www.nextory.dk/bog/a-game-of-thrones-a...</td>
+      <td>HBO’s hit series A GAME OF THRONES is based on...</td>
+      <td></td>
+      <td>2011-07-12 00:00:00 +0200</td>
+      <td>[George R.R. Martin]</td>
+      <td>1</td>
+      <td>...</td>
+      <td>a-game-of-thrones-a-song-of-ice-and-fire-book-...</td>
+      <td>roy-dotrice-95418</td>
+      <td>0</td>
+      <td>0</td>
+      <td>ACTIVE</td>
+      <td>NaN</td>
+      <td>1.0</td>
+      <td>a-song-of-ice-and-fire-2394</td>
+      <td>A Song of Ice and Fire</td>
+      <td>books-in-english</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 26 columns</p>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Now I want to find the best books. I am using my own logic here and you are welcome to do it in another way - but please share that with me so I can learn.</p>
+<p>First I am removing all books without a review. Then I am calculating a log value of number of ratings in order to give good books with fewer rating a better chance.</p>
+<p>Then I multiply the average rating with the log of number of ratings to produce a score. The logic is that product of the two is the best indicator of a good book - ie one that consistently generates possitive reviews.</p>
+<p>Finally I sort them according to their new score.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">booksunique</span> <span class="o">=</span> <span class="n">booksunique</span><span class="p">[</span><span class="n">booksunique</span><span class="p">[</span><span class="s1">'avgrate'</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">booksunique</span> <span class="o">=</span> <span class="n">booksunique</span><span class="p">[</span><span class="n">booksunique</span><span class="p">[</span><span class="s1">'numberofrates'</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="n">booksunique</span><span class="p">[</span><span class="s1">'log_of_numberofrates'</span><span class="p">]</span> <span class="o">=</span> <span class="n">booksunique</span><span class="p">[</span><span class="s1">'numberofrates'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
+
+<span class="n">booksunique</span><span class="p">[</span><span class="s1">'score'</span><span class="p">]</span> <span class="o">=</span> <span class="n">booksunique</span><span class="p">[</span><span class="s1">'avgrate'</span><span class="p">]</span> <span class="o">*</span> <span class="n">booksunique</span><span class="p">[</span><span class="s1">'log_of_numberofrates'</span><span class="p">]</span>
+
+<span class="n">booksunique</span> <span class="o">=</span> <span class="n">booksunique</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'score'</span><span class="p">],</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Finally I will clean up the data frame a bit. I will limit the amount of columns and clean the category name. And then finally only pick the top ten in each category.</p>
+
+</div>
+</div>
+</div>
+    
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">goodbooks</span> <span class="o">=</span> <span class="n">booksunique</span><span class="p">[[</span><span class="s1">'title'</span><span class="p">,</span> <span class="s1">'category'</span><span class="p">,</span> <span class="s1">'avgrate'</span><span class="p">,</span> <span class="s1">'numberofrates'</span><span class="p">,</span> <span class="s1">'score'</span><span class="p">]]</span>
+<span class="n">goodbooks</span><span class="p">[</span><span class="s1">'category'</span><span class="p">]</span> <span class="o">=</span> <span class="n">goodbooks</span><span class="p">[</span><span class="s1">'category'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">clean_cat</span><span class="p">)</span>
+
+<span class="c1"># get dataframe sorted by score in each category </span>
+<span class="n">goodbooks</span> <span class="o">=</span> <span class="n">goodbooks</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"category"</span><span class="p">])</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s2">"score"</span><span class="p">],</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">))</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># select top N rows within each category</span>
+<span class="n">goodbooks</span> <span class="o">=</span> <span class="n">goodbooks</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'category'</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">goodbooks</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>&lt;ipython-input-29-691811bd2daf&gt;:2: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  goodbooks['category'] = goodbooks['category'].apply(clean_cat)
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>title</th>
+      <th>category</th>
+      <th>avgrate</th>
+      <th>numberofrates</th>
+      <th>score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Sygeplejersken - En af Danmarkshistoriens mest...</td>
+      <td>Biografier And Reportage</td>
+      <td>4.443798</td>
+      <td>1032</td>
+      <td>30.836646</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Geggo: Fra vild teenager til businesskvinde og...</td>
+      <td>Biografier And Reportage</td>
+      <td>4.424134</td>
+      <td>837</td>
+      <td>29.773642</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Rødder: En gangsters udvej. Nedim Yasars historie</td>
+      <td>Biografier And Reportage</td>
+      <td>4.358811</td>
+      <td>471</td>
+      <td>26.827863</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>Kære Zoe Ukhona</td>
+      <td>Biografier And Reportage</td>
+      <td>4.695817</td>
+      <td>263</td>
+      <td>26.165818</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>Nicklas Bendtner - Begge sider</td>
+      <td>Biografier And Reportage</td>
+      <td>4.347059</td>
+      <td>340</td>
+      <td>25.338769</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>5074</th>
+      <td>Twilight: Tusmørke</td>
+      <td>Teenager And Young Adult</td>
+      <td>4.352941</td>
+      <td>17</td>
+      <td>12.332811</td>
+    </tr>
+    <tr>
+      <th>5075</th>
+      <td>Råddenskab: Ravneringene 2</td>
+      <td>Teenager And Young Adult</td>
+      <td>4.461538</td>
+      <td>13</td>
+      <td>11.443620</td>
+    </tr>
+    <tr>
+      <th>5076</th>
+      <td>Evnen: Ravneringene 3</td>
+      <td>Teenager And Young Adult</td>
+      <td>4.727273</td>
+      <td>11</td>
+      <td>11.335505</td>
+    </tr>
+    <tr>
+      <th>5077</th>
+      <td>Døde piger lyver ikke</td>
+      <td>Teenager And Young Adult</td>
+      <td>4.416667</td>
+      <td>12</td>
+      <td>10.975004</td>
+    </tr>
+    <tr>
+      <th>5078</th>
+      <td>Ravnenes hvisken Bog 1</td>
+      <td>Teenager And Young Adult</td>
+      <td>4.700000</td>
+      <td>10</td>
+      <td>10.822150</td>
+    </tr>
+  </tbody>
+</table>
+<p>180 rows × 5 columns</p>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    
+
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="FIN">
+<a class="anchor" href="#FIN" aria-hidden="true"><span class="octicon octicon-link"></span></a>FIN<a class="anchor-link" href="#FIN"> </a>
+</h3>
+<p>And voila. Now you have a list of pretty good audiobooks to pass the time with. Enjoy :)</p>
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+  </div><!-- from https://github.com/utterance/utterances -->
+<script src="https://utteranc.es/client.js"
+        repo="mikkelkrogsholm/fastblog"
+        issue-term="title"
+        label="blogpost-comment"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script><a class="u-url" href="/fastblog/audiobooks/api/python/jupyter/2020/07/27/best_audio_books.html" hidden></a>
+</article>
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/fastblog/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p class="feed-subscribe">
+          <a href="/fastblog/feed.xml">
+            <svg class="svg-icon orange">
+              <use xlink:href="/fastblog/assets/minima-social-icons.svg#rss"></use>
+            </svg><span>Subscribe</span>
+          </a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <p>A blog journaling my adventures into data science</p>
+      </div>
+    </div>
+
+    <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/mikkelkrogsholm" title="mikkelkrogsholm"><svg class="svg-icon grey"><use xlink:href="/fastblog/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://www.linkedin.com/in/mikkelkrogsholm" title="mikkelkrogsholm"><svg class="svg-icon grey"><use xlink:href="/fastblog/assets/minima-social-icons.svg#linkedin"></use></svg></a></li><li><a rel="me" href="https://twitter.com/mikkelkrogsholm" title="mikkelkrogsholm"><svg class="svg-icon grey"><use xlink:href="/fastblog/assets/minima-social-icons.svg#twitter"></use></svg></a></li></ul>
+</div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
