@@ -19,5 +19,5 @@ Society is fascinating. Especially the political part. Traditionally trained as 
 ### Public Speaker
 I cannot shut up about the stuff I do. So I often speak at meetups and conferences on my ideas and on new ways of doing things.
 
-#### Festival lover
+### Festival lover
 I love music, concerts and festivals. I attend a lot of them... A lot. I have also combined my love for data with my love for festivals: I head the data science team at Smukfest (Denmarks second largest festival). We spin up servers, docker containers, algorithms and dashboards that hum away while the music is playing providing valuable insights to the festival management.
