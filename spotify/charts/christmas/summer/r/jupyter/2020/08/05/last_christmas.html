@@ -1,0 +1,225 @@
+<p>This blogpost looks at music.</p>
+
+<p>I have downloaded most of the chart data from <a href="https://spotifycharts.com/">spotifycharts</a> and stored them in a SQLite database.</p>
+
+<p>Specifically I will look at “seasonal classics”. It turns out that there are no summer classics - only christmas classics. It looks like Summer Hits are temporary and fleeing where Christmas songs are more permanent.</p>
+
+<h3 id="setup">Setup</h3>
+
+<p>First I load the needed libraries and created a connection to my local database with music.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">suppressPackageStartupMessages</span><span class="p">(</span><span class="n">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">))</span><span class="w">
+</span><span class="n">library</span><span class="p">(</span><span class="n">RSQLite</span><span class="p">)</span><span class="w">
+
+</span><span class="n">options</span><span class="p">(</span><span class="n">repr.plot.width</span><span class="o">=</span><span class="m">15</span><span class="p">,</span><span class="w"> </span><span class="n">repr.plot.height</span><span class="o">=</span><span class="m">7.5</span><span class="p">,</span><span class="w"> </span><span class="n">scipen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">999</span><span class="p">)</span><span class="w">
+
+</span><span class="n">con</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dbConnect</span><span class="p">(</span><span class="n">RSQLite</span><span class="o">::</span><span class="n">SQLite</span><span class="p">(),</span><span class="w"> </span><span class="s2">"spotify.db"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="collect-the-data">Collect the data</h3>
+
+<p>I will look a three countries: Germany (de), Denmark (dk) and Great Britain (gb). And then create a plot that shows how many Christmas songs are the same year on year, but summer songs are not.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Make a reference to the table in the DB</span><span class="w">
+</span><span class="n">tblref</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tbl</span><span class="p">(</span><span class="n">con</span><span class="p">,</span><span class="w"> </span><span class="s2">"top200"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Collect the data</span><span class="w">
+</span><span class="n">dfhere</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">tblref</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">region</span><span class="w"> </span><span class="o">%in%</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"de"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dk"</span><span class="p">,</span><span class="w"> </span><span class="s2">"gb"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># filter relevant countries</span><span class="w">
+    </span><span class="n">mutate</span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_sub</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="m">6</span><span class="p">,</span><span class="w"> </span><span class="m">7</span><span class="p">),</span><span class="w"> </span><span class="c1"># create a month column</span><span class="w">
+           </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str_sub</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">),</span><span class="w"> </span><span class="c1"># create a year column</span><span class="w">
+           </span><span class="n">ym</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paste</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># create a yearmonth  column</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">`Track Name`</span><span class="p">,</span><span class="w"> </span><span class="n">Artist</span><span class="p">,</span><span class="w"> </span><span class="n">URL</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># Group by region, track and year month</span><span class="w">
+    </span><span class="n">summarise</span><span class="p">(</span><span class="n">streams</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">Streams</span><span class="p">,</span><span class="w"> </span><span class="n">na.rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># sum up the streams for a track per year month </span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="c1"># ungroup</span><span class="w">
+    </span><span class="n">collect</span><span class="p">()</span><span class="w"> </span><span class="c1"># Import the data into R's memory</span><span class="w">
+
+</span><span class="c1"># Lets have a look at the first few lines</span><span class="w">
+</span><span class="n">head</span><span class="p">(</span><span class="n">dfhere</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<table>
+<caption>A tibble: 6 × 8</caption>
+<thead>
+	<tr><th scope="col">region</th><th scope="col">y</th><th scope="col">m</th><th scope="col">ym</th><th scope="col">Track Name</th><th scope="col">Artist</th><th scope="col">URL</th><th scope="col">streams</th></tr>
+	<tr><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;int&gt;</th></tr>
+</thead>
+<tbody>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>'Till I Collapse</td><td>Eminem       </td><td>https://open.spotify.com/track/6yr8GiTHWvFfi4o6Q5ebdT</td><td> 950929</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>10 Jahre        </td><td>Gzuz         </td><td>https://open.spotify.com/track/3KbCjPkewCmJt09FYtyVK5</td><td>2921941</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>24 Karat        </td><td>Kollegah     </td><td>https://open.spotify.com/track/77NydtMB8mylSXby3y5aDG</td><td>  24446</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>24K Magic       </td><td>Bruno Mars   </td><td>https://open.spotify.com/track/6b8Be6ljOzmkOmFslEb23P</td><td>2067541</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>7 Years         </td><td>Lukas Graham </td><td>https://open.spotify.com/track/7129iqBafaphfc3WPCGC0L</td><td> 905040</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>80 Millionen    </td><td>Max Giesinger</td><td>https://open.spotify.com/track/14SZQ3k55sfzGLuv9WZ4Xe</td><td> 154202</td></tr>
+</tbody>
+</table>
+
+<p>With the monthly data now in memory I will pick the top 100 tracks per month</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">top</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dfhere</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">ym</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">top_n</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">100</span><span class="p">,</span><span class="w"> </span><span class="n">wt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">streams</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># yms &lt;- top$ym %&gt;% unique() %&gt;% sort()</span><span class="w">
+</span><span class="c1"># top$ym &lt;- factor(top$ym, levels = yms)</span><span class="w">
+
+</span><span class="n">head</span><span class="p">(</span><span class="n">top</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<table>
+<caption>A tibble: 6 × 8</caption>
+<thead>
+	<tr><th scope="col">region</th><th scope="col">y</th><th scope="col">m</th><th scope="col">ym</th><th scope="col">Track Name</th><th scope="col">Artist</th><th scope="col">URL</th><th scope="col">streams</th></tr>
+	<tr><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;int&gt;</th></tr>
+</thead>
+<tbody>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>10 Jahre    </td><td>Gzuz       </td><td>https://open.spotify.com/track/3KbCjPkewCmJt09FYtyVK5</td><td>2921941</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>24K Magic   </td><td>Bruno Mars </td><td>https://open.spotify.com/track/6b8Be6ljOzmkOmFslEb23P</td><td>2067541</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>Ahnma       </td><td>Beginner   </td><td>https://open.spotify.com/track/5CXjevTAQIYO1Z0yyiOOno</td><td>1788179</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>Alarm       </td><td>Anne-Marie </td><td>https://open.spotify.com/track/0OwX5aROoW1Iip8FV51Efg</td><td>1351960</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>All Night   </td><td>The Vamps  </td><td>https://open.spotify.com/track/1yNyoWWWikbLhwIGWjZuDW</td><td>2698589</td></tr>
+	<tr><td>de</td><td>2017</td><td>01</td><td>2017 01</td><td>All Time Low</td><td>Jon Bellion</td><td>https://open.spotify.com/track/1CnPYaKxTVb4LWOtiGOm0m</td><td>2352737</td></tr>
+</tbody>
+</table>
+
+<p>Now we need to divide the data into different data frames. We need these to create the visualization.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># First I create a table with repeaters, i.e. with songs that appear in the same month across the years more than once:</span><span class="w">
+</span><span class="n">repeaters</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">top</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">count</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">`Track Name`</span><span class="p">,</span><span class="w"> </span><span class="n">Artist</span><span class="p">,</span><span class="w"> </span><span class="n">URL</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">URL</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># Then I filter the data to only contain data for the repeathers</span><span class="w">
+</span><span class="n">toprep</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">top</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">inner_join</span><span class="p">(</span><span class="n">repeaters</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"URL"</span><span class="p">))</span><span class="w">
+
+</span><span class="c1"># Then I create a table with the songs that have max hits in december</span><span class="w">
+</span><span class="n">xmasmax</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">toprep</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">group_by</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">URL</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">filter</span><span class="p">(</span><span class="n">streams</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">streams</span><span class="p">),</span><span class="w">
+           </span><span class="n">m</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="m">12</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">select</span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">URL</span><span class="p">)</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w">
+    </span><span class="n">ungroup</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># And use this table to create a data frame for repeater songs where</span><span class="w">
+</span><span class="c1"># the most streams are not in december</span><span class="w">
+</span><span class="n">noxmas</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">toprep</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">anti_join</span><span class="p">(</span><span class="n">xmasmax</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"URL"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">distinct</span><span class="p">()</span><span class="w">
+
+</span><span class="c1"># And a dataframe where most streams are in december</span><span class="w">
+</span><span class="n">xmas</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">toprep</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">inner_join</span><span class="p">(</span><span class="n">xmasmax</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"region"</span><span class="p">,</span><span class="w"> </span><span class="s2">"URL"</span><span class="p">))</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">distinct</span><span class="p">()</span><span class="w">
+
+</span><span class="n">head</span><span class="p">(</span><span class="n">xmas</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<table>
+<caption>A tibble: 6 × 8</caption>
+<thead>
+	<tr><th scope="col">region</th><th scope="col">y</th><th scope="col">m</th><th scope="col">ym</th><th scope="col">Track Name</th><th scope="col">Artist</th><th scope="col">URL</th><th scope="col">streams</th></tr>
+	<tr><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;chr&gt;</th><th scope="col">&lt;int&gt;</th></tr>
+</thead>
+<tbody>
+	<tr><td>de</td><td>2017</td><td>12</td><td>2017 12</td><td>All I Want for Christmas Is You    </td><td>Mariah Carey  </td><td>https://open.spotify.com/track/0bYg9bo50gSsH3LtXe2SQn</td><td>8895808</td></tr>
+	<tr><td>de</td><td>2017</td><td>12</td><td>2017 12</td><td>Christmas Lights                   </td><td>Coldplay      </td><td>https://open.spotify.com/track/4fzyvSu73BhGvi96p2zwjL</td><td>2321093</td></tr>
+	<tr><td>de</td><td>2017</td><td>12</td><td>2017 12</td><td>Christmas Time                     </td><td>Bryan Adams   </td><td>https://open.spotify.com/track/0hnErtVKN1JyvfBNfpWDpO</td><td>2906518</td></tr>
+	<tr><td>de</td><td>2017</td><td>12</td><td>2017 12</td><td>Feliz Navidad                      </td><td>José Feliciano</td><td>https://open.spotify.com/track/7taXf5odg9xCAZERYfyOkS</td><td>2498182</td></tr>
+	<tr><td>de</td><td>2017</td><td>12</td><td>2017 12</td><td>Hallelujah                         </td><td>Pentatonix    </td><td>https://open.spotify.com/track/550rQQCGkrTzvp4SfpOPzx</td><td>3738649</td></tr>
+	<tr><td>de</td><td>2017</td><td>12</td><td>2017 12</td><td>Happy Xmas (War Is Over) - 2010 Mix</td><td>John Lennon   </td><td>https://open.spotify.com/track/3zJw3rugfpVrmBeDDnUYzy</td><td>4203958</td></tr>
+</tbody>
+</table>
+
+<h3 id="visualize-the-data">Visualize the data</h3>
+
+<h4 id="year-on-year-repeaters">Year on year repeaters</h4>
+<p>Let’s first look at the songs that repeat year on year. As you can see the songs normally have a more or less sharp rise and then a long slow decline. It is this decline that makes it possible for the song to appear in the same months year on year, although on a very different scale.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># I need a little helper to create pretty x-axis on the charts</span><span class="w">
+</span><span class="n">yms</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">top</span><span class="o">$</span><span class="n">ym</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">unique</span><span class="p">()</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">sort</span><span class="p">()</span><span class="w">
+</span><span class="n">yms_labs</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">str_c</span><span class="p">(</span><span class="n">str_sub</span><span class="p">(</span><span class="n">yms</span><span class="p">,</span><span class="w"> </span><span class="m">-2</span><span class="p">,</span><span class="m">-1</span><span class="p">),</span><span class="w"> </span><span class="s2">" '"</span><span class="p">,</span><span class="w"> </span><span class="n">str_sub</span><span class="p">(</span><span class="n">yms</span><span class="p">,</span><span class="w"> </span><span class="m">3</span><span class="p">,</span><span class="w"> </span><span class="m">4</span><span class="p">))</span><span class="w">
+</span><span class="n">yms_df</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">top</span><span class="w"> </span><span class="o">%&gt;%</span><span class="w"> </span><span class="n">distinct</span><span class="p">(</span><span class="n">ym</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ggplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="c1"># Then I plot the non-xmas data in green</span><span class="w">
+    </span><span class="n">geom_line</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noxmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dashed"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noxmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    
+    </span><span class="c1"># And some chart styling</span><span class="w">
+    </span><span class="n">scale_x_discrete</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yms_labs</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yms</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">theme_minimal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">facet_wrap</span><span class="p">(</span><span class="n">facets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Streams per month"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p><img src="{ site.baseurl }}/images/lastchristmas/output_14_0.png" alt="" /></p>
+
+<h4 id="christmas-repeaters">Christmas repeaters</h4>
+<p>It looks a bit different if we plot the Christmas songs. It becomes very obvious that the Christmas repeaters are limited to Christmas. They also do not follow the same path as the other songs (sharp increase, long slow decrease). They come to life pretty high on the charts in december (some in november) and then they quickly die out and wait for Christmas to come again. I have marked decemberr with a red dashed line.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ggplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+
+    </span><span class="c1"># First I create a vertical red dashed line for every december month</span><span class="w">
+    </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"2017 12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2018 12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2019 12"</span><span class="p">),</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dashed"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    
+    </span><span class="c1"># And the christmas data in blue</span><span class="w">
+    </span><span class="n">geom_line</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.9</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    
+    </span><span class="c1"># And some chart styling</span><span class="w">
+    </span><span class="n">scale_x_discrete</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yms_labs</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yms</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">theme_minimal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">facet_wrap</span><span class="p">(</span><span class="n">facets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Streams per month"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p><img src="{ site.baseurl }}/images/lastchristmas/output_16_0.png" alt="" /></p>
+
+<h4 id="plotted-together">Plotted together</h4>
+<p>When plotted together the difference becomes obvious.</p>
+
+<div class="language-R highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ggplot</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="c1"># First I create a vertical red dashed line for every december month</span><span class="w">
+    </span><span class="n">geom_vline</span><span class="p">(</span><span class="n">xintercept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">c</span><span class="p">(</span><span class="s2">"2017 12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2018 12"</span><span class="p">,</span><span class="w"> </span><span class="s2">"2019 12"</span><span class="p">),</span><span class="w"> </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dashed"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"red"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    
+    </span><span class="c1"># Then I plot the non-xmas data in green</span><span class="w">
+    </span><span class="n">geom_line</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noxmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">linetype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"dashed"</span><span class="p">,</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">noxmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"darkgreen"</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.4</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    
+    </span><span class="c1"># And the christmas data in blue</span><span class="w">
+    </span><span class="n">geom_line</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> 
+              </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">geom_point</span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xmas</span><span class="p">,</span><span class="w"> </span><span class="n">aes</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="w"> </span><span class="n">streams</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">URL</span><span class="p">),</span><span class="w"> </span><span class="n">show.legend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">FALSE</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"blue"</span><span class="p">,</span><span class="w"> 
+               </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">.9</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    
+    </span><span class="c1"># And some chart styling</span><span class="w">
+    </span><span class="n">scale_x_discrete</span><span class="p">(</span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yms_labs</span><span class="p">,</span><span class="w"> </span><span class="n">limits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yms</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">theme_minimal</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> 
+    </span><span class="n">theme</span><span class="p">(</span><span class="n">axis.text.x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">element_text</span><span class="p">(</span><span class="n">angle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">45</span><span class="p">))</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">facet_wrap</span><span class="p">(</span><span class="n">facets</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">scales</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"free_y"</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w">
+    </span><span class="n">labs</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Streams per month"</span><span class="p">)</span><span class="w">
+</span></code></pre></div></div>
+
+<p><img src="{ site.baseurl }}/images/lastchristmas/output_18_0.png" alt="" /></p>
+
+<h3 id="interpretation">Interpretation</h3>
+
+<h4 id="non-christmas">Non Christmas</h4>
+<p>We see a few non-christmas songs that make it more than a year - ie they appear in the same month i more than one year. But, they show a much different trend than the christmas songs. They have a pattern of popularity and then a fade out.</p>
+
+<h4 id="christmas">Christmas</h4>
+<p>With the Christmas songs we see a whole different pattern. First we see more of them, ie there are more survivors year on year. Second the pattern is quite different; the songs lie dormant pretty much all year and then suddenly they explode in december. Some even get an early listen in november, where the must christmas enthusiastic people get started.</p>
+
+<h2 id="conlusion">Conlusion</h2>
+<p>There is no such thing as a summer classic - but plenty of christmas classics!</p>
